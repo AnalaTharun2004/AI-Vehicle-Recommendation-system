@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registered Users</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="navbar">
+            <h1>Vehicle Recommendation System</h1>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/login">Login</a></li>
+                <li><a href="/register">Register</a></li>
+                <li><a href="/users">Users</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section class="users-page">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Registered Users</h2>
+                    <p>All saved login records from the database.</p>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                                <tr>
+                                    <td>{{ user['user_id'] }}</td>
+                                    <td>{{ user['username'] }}</td>
+                                    <td>{{ user['email'] }}</td>
+                                    <td>{{ user['created_at'] }}</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="4">No registered users yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

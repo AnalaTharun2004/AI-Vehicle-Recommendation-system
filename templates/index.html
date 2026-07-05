@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Vehicle Recommendation System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="navbar">
+            <h1>Vehicle Recommendation System</h1>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/login">Login</a></li>
+                <li><a href="/register">Register</a></li>
+                <li><a href="/users">Users</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="hero-text">
+                <h2>Find the Best Cars and Bikes for Your Needs</h2>
+                <p>Search by budget, fuel type, transmission, seating capacity, and more. Our recommendations are based on real database records.</p>
+            </div>
+            <div class="hero-form">
+                <div class="panel">
+                    <h3>Search Vehicles</h3>
+                    <div class="classification-panel">
+                        <h4>Classifications available in the database</h4>
+                        <div class="classification-list">
+                            <div><strong>Vehicle Types:</strong> {{ vehicle_types | join(', ') }}</div>
+                            <div><strong>Brands:</strong> {{ brands | join(', ') }}</div>
+                            <div><strong>Fuel Types:</strong> {{ fuel_types | join(', ') }}</div>
+                            <div><strong>Transmissions:</strong> {{ transmissions | join(', ') }}</div>
+                            <div><strong>Body Types:</strong> {{ body_types | join(', ') }}</div>
+                            <div><strong>Seating Capacity:</strong> {{ seatings | join(', ') }}</div>
+                            <div><strong>Budget Range:</strong> ₹{{ '{:,}'.format(budget_min_db) if budget_min_db else 'N/A' }} - ₹{{ '{:,}'.format(budget_max_db) if budget_max_db else 'N/A' }}</div>
+                            <div><strong>Budget Tip:</strong> Enter min and max values in the search fields to narrow the results within this available range.</div>
+                        </div>
+                    </div>
+                    <form method="POST" action="/result">
+                        <div class="classification-tabs">
+                            <div class="tab-buttons">
+                                <button type="button" class="tab-btn active" data-tab="vehicle_type">Vehicle Type</button>
+                                <button type="button" class="tab-btn" data-tab="brand">Brand</button>
+                                <button type="button" class="tab-btn" data-tab="fuel_type">Fuel Type</button>
+                                <button type="button" class="tab-btn" data-tab="transmission">Transmission</button>
+                                <button type="button" class="tab-btn" data-tab="body_type">Body Type</button>
+                                <button type="button" class="tab-btn" data-tab="seating_capacity">Seating Capacity</button>
+                            </div>
+                            <div class="tab-panels">
+                                <div class="tab-panel active" data-tab="vehicle_type">
+                                    <h4>Vehicle Type</h4>
+                                    {% if vehicle_types %}
+                                        {% for item in vehicle_types %}
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" name="vehicle_type" value="{{ item }}">
+                                                <span>{{ item }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="empty-state">No vehicle types available.</p>
+                                    {% endif %}
+                                </div>
+                                <div class="tab-panel" data-tab="brand">
+                                    <h4>Brand</h4>
+                                    {% if brands %}
+                                        {% for item in brands %}
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" name="brand" value="{{ item }}">
+                                                <span>{{ item }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="empty-state">No brands available.</p>
+                                    {% endif %}
+                                </div>
+                                <div class="tab-panel" data-tab="fuel_type">
+                                    <h4>Fuel Type</h4>
+                                    {% if fuel_types %}
+                                        {% for item in fuel_types %}
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" name="fuel_type" value="{{ item }}">
+                                                <span>{{ item }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="empty-state">No fuel types available.</p>
+                                    {% endif %}
+                                </div>
+                                <div class="tab-panel" data-tab="transmission">
+                                    <h4>Transmission</h4>
+                                    {% if transmissions %}
+                                        {% for item in transmissions %}
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" name="transmission" value="{{ item }}">
+                                                <span>{{ item }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="empty-state">No transmission options available.</p>
+                                    {% endif %}
+                                </div>
+                                <div class="tab-panel" data-tab="body_type">
+                                    <h4>Body Type</h4>
+                                    {% if body_types %}
+                                        {% for item in body_types %}
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" name="body_type" value="{{ item }}">
+                                                <span>{{ item }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="empty-state">No body types available.</p>
+                                    {% endif %}
+                                </div>
+                                <div class="tab-panel" data-tab="seating_capacity">
+                                    <h4>Seating Capacity</h4>
+                                    {% if seatings %}
+                                        {% for item in seatings %}
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" name="seating_capacity" value="{{ item }}">
+                                                <span>{{ item }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="empty-state">No seating options available.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="budget_min">Min Budget</label>
+                                <input type="number" id="budget_min" name="budget_min" placeholder="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="budget_max">Max Budget</label>
+                                <input type="number" id="budget_max" name="budget_max" placeholder="Any">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Show Matching Vehicles</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section class="featured-section">
+            <div class="section-header">
+                <h2>Featured Vehicles</h2>
+                <p>Here are some top-rated vehicles from the database.</p>
+            </div>
+            <div class="results">
+                {% for vehicle in featured %}
+                    <article class="result-card">
+                        <h3>{{ vehicle['name'] }}</h3>
+                        <p><strong>Brand:</strong> {{ vehicle['brand'] }}</p>
+                        <p><strong>Type:</strong> {{ vehicle['type'] }}</p>
+                        <p><strong>Body:</strong> {{ vehicle['body_type'] }}</p>
+                        <p><strong>Fuel:</strong> {{ vehicle['fuel_type'] }}</p>
+                        <p><strong>Transmission:</strong> {{ vehicle['transmission'] }}</p>
+                        <p><strong>Seating:</strong> {{ vehicle['seating_capacity'] }}</p>
+                        <p><strong>Price:</strong> ₹{{ '{:,}'.format(vehicle['price']) }}</p>
+                        <p><strong>Safety:</strong> {{ vehicle['safety_rating'] }}/5</p>
+                    </article>
+                {% else %}
+                    <p>No featured vehicles available.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

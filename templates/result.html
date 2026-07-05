@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendations - Vehicle Recommendation System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="navbar">
+            <h1>Vehicle Recommendation System</h1>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/login">Login</a></li>
+                <li><a href="/register">Register</a></li>
+                <li><a href="/users">Users</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section class="results-page">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Recommended Vehicles</h2>
+                    <p>Showing vehicles that match your selected requirements.</p>
+                </div>
+                <div class="filter-summary">
+                    <div><strong>Type:</strong> {{ filters.vehicle_type }}</div>
+                    <div><strong>Brand:</strong> {{ filters.brand }}</div>
+                    <div><strong>Fuel:</strong> {{ filters.fuel_type }}</div>
+                    <div><strong>Transmission:</strong> {{ filters.transmission }}</div>
+                    <div><strong>Seats:</strong> {{ filters.seating_capacity }}</div>
+                    <div><strong>Body:</strong> {{ filters.body_type }}</div>
+                    <div><strong>Budget:</strong> {{ filters.budget_min }} - {{ filters.budget_max }}</div>
+                </div>
+
+                {% if vehicles and vehicles|length > 0 %}
+                    <div class="results">
+                        {% for vehicle in vehicles %}
+                            <article class="result-card">
+                                <h3>{{ vehicle['name'] }}</h3>
+                                <p><strong>Brand:</strong> {{ vehicle['brand'] }}</p>
+                                <p><strong>Type:</strong> {{ vehicle['type'] }}</p>
+                                <p><strong>Body:</strong> {{ vehicle['body_type'] }}</p>
+                                <p><strong>Fuel:</strong> {{ vehicle['fuel_type'] }}</p>
+                                <p><strong>Transmission:</strong> {{ vehicle['transmission'] }}</p>
+                                <p><strong>Seating:</strong> {{ vehicle['seating_capacity'] }}</p>
+                                <p><strong>Price:</strong> ₹{{ '{:,}'.format(vehicle['price']) }}</p>
+                                <p><strong>Mileage:</strong> {{ vehicle['mileage'] }} kmpl</p>
+                                <p><strong>Safety Rating:</strong> {{ vehicle['safety_rating'] }}/5</p>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <h3>No vehicles match your current requirements.</h3>
+                        <p>Try changing your budget or selecting a broader vehicle type to see more results.</p>
+                    </div>
+                {% endif %}
+
+                <a href="/" class="btn btn-primary">Back to Search</a>
+            </div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
