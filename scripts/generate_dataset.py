@@ -58,11 +58,11 @@ vehicles = [
 
 records = []
 
-for year in range(2020, 2026):
+for year in [2025]:
     for vehicle in vehicles:
         name, brand, vtype, engine, seats, power, body = vehicle
 
-        for variant in range(1, 5):
+        for variant in range(1, 2):
 
             if vtype == "Car":
                 price = random.randint(600000, 4500000)
