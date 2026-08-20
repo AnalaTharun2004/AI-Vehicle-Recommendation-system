@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav><div class="navbar"><h1>Admin Dashboard</h1><ul><li><a href="{{ url_for('index') }}">Public Site</a></li><li><a href="{{ url_for('admin_logout') }}">Logout</a></li></ul></div></nav>
+    <main><section class="admin-page"><div class="container">
+        <div class="admin-header"><div><p class="eyebrow">Catalog control</p><h2>Vehicle Inventory</h2><p>Create, update, and remove vehicles used by recommendations.</p></div><a class="btn btn-primary" href="{{ url_for('create_vehicle') }}">+ Add New Vehicle</a></div>
+        <div class="admin-stats"><div><strong>{{ vehicles|length }}</strong><span>Vehicles</span></div><div><strong>{{ users_count }}</strong><span>Registered Users</span></div></div>
+        {% with messages = get_flashed_messages() %}{% if messages %}<div class="messages">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}{% endwith %}
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>Vehicle</th><th>Brand</th><th>Type</th><th>Price</th><th>Fuel</th><th>Actions</th></tr></thead><tbody>
+            {% for vehicle in vehicles %}<tr><td>{{ vehicle['vehicle_id'] }}</td><td><strong>{{ vehicle['name'] }}</strong><br><small>{{ vehicle['model_year'] or 'Year not set' }}</small></td><td>{{ vehicle['brand'] }}</td><td>{{ vehicle['type'] }}</td><td>₹{{ '{:,}'.format(vehicle['price']) if vehicle['price'] is not none else 'N/A' }}</td><td>{{ vehicle['fuel_type'] or 'N/A' }}</td><td class="actions"><a class="btn btn-small" href="{{ url_for('edit_vehicle', vehicle_id=vehicle['vehicle_id']) }}">Edit</a><form method="POST" action="{{ url_for('delete_vehicle', vehicle_id=vehicle['vehicle_id']) }}" onsubmit="return confirm('Delete this vehicle?');"><button type="submit" class="btn btn-small btn-danger">Delete</button></form></td></tr>
+            {% else %}<tr><td colspan="7">No vehicles found.</td></tr>{% endfor %}
+        </tbody></table></div>
+    </div></section></main>
+</body>
+</html>

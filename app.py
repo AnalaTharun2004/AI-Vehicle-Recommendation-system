@@ -1,10 +1,15 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from functools import wraps
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 import sqlite3
 import os
+import secrets
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'
+app.secret_key = os.environ.get('SECRET_KEY', 'development-secret-key-change-me')
+
+ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@vehicleai.com')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATABASE = os.path.join(BASE_DIR, 'database', 'vehicle.db')
@@ -83,6 +88,144 @@ def get_featured_vehicles(limit=6):
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        if not session.get('is_admin'):
+            return redirect(url_for('admin_login', next=request.path))
+        return view(*args, **kwargs)
+    return wrapped_view
+
+
+VEHICLE_FIELDS = [
+    ('name', 'Name', 'text', True),
+    ('brand', 'Brand', 'text', True),
+    ('type', 'Vehicle Type', 'text', True),
+    ('model_year', 'Model Year', 'number', False),
+    ('price', 'Price', 'number', False),
+    ('mileage', 'Mileage', 'number', False),
+    ('fuel_type', 'Fuel Type', 'text', False),
+    ('transmission', 'Transmission', 'text', False),
+    ('safety_rating', 'Safety Rating', 'number', False),
+    ('engine_cc', 'Engine CC', 'number', False),
+    ('seating_capacity', 'Seating Capacity', 'number', False),
+    ('power_bhp', 'Power (BHP)', 'number', False),
+    ('torque_nm', 'Torque (NM)', 'number', False),
+    ('body_type', 'Body Type', 'text', False),
+    ('airbags', 'Airbags', 'number', False),
+    ('abs', 'ABS', 'text', False),
+    ('ground_clearance', 'Ground Clearance', 'number', False),
+    ('boot_space', 'Boot Space', 'number', False),
+    ('service_cost', 'Service Cost', 'number', False),
+    ('insurance_cost', 'Insurance Cost', 'number', False),
+]
+
+
+def vehicle_form_values():
+    values = {}
+    try:
+        for field, _, field_type, required in VEHICLE_FIELDS:
+            raw_value = request.form.get(field, '').strip()
+            if required and not raw_value:
+                raise ValueError(f'{field.replace("_", " ").title()} is required')
+            if not raw_value:
+                values[field] = None
+            elif field_type == 'number':
+                values[field] = float(raw_value) if field == 'safety_rating' else int(raw_value)
+            else:
+                values[field] = raw_value
+    except ValueError as error:
+        raise ValueError(f'Enter valid vehicle details: {error}') from error
+    return values
+
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if session.get('is_admin'):
+        return redirect(url_for('admin_dashboard'))
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        if secrets.compare_digest(email, ADMIN_EMAIL) and secrets.compare_digest(password, ADMIN_PASSWORD):
+            session['is_admin'] = True
+            return redirect(request.args.get('next') or url_for('admin_dashboard'))
+        flash('Invalid administrator email or password')
+    return render_template('admin_login.html')
+
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('is_admin', None)
+    return redirect(url_for('admin_login'))
+
+
+@app.route('/admin')
+@admin_required
+def admin_dashboard():
+    conn = get_db_connection()
+    vehicles = conn.execute('SELECT * FROM vehicles ORDER BY vehicle_id DESC').fetchall()
+    users_count = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
+    conn.close()
+    return render_template('admin_dashboard.html', vehicles=vehicles, users_count=users_count)
+
+
+@app.route('/admin/vehicles/new', methods=['GET', 'POST'])
+@admin_required
+def create_vehicle():
+    if request.method == 'POST':
+        try:
+            values = vehicle_form_values()
+        except ValueError as error:
+            flash(str(error))
+            return render_template('vehicle_form.html', vehicle=request.form, fields=VEHICLE_FIELDS, title='Add Vehicle')
+        conn = get_db_connection()
+        columns = ', '.join(values)
+        placeholders = ', '.join('?' for _ in values)
+        conn.execute(f'INSERT INTO vehicles ({columns}) VALUES ({placeholders})', tuple(values.values()))
+        conn.commit()
+        conn.close()
+        flash('Vehicle created successfully')
+        return redirect(url_for('admin_dashboard'))
+    return render_template('vehicle_form.html', vehicle={}, fields=VEHICLE_FIELDS, title='Add Vehicle')
+
+
+@app.route('/admin/vehicles/<int:vehicle_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_vehicle(vehicle_id):
+    conn = get_db_connection()
+    vehicle = conn.execute('SELECT * FROM vehicles WHERE vehicle_id = ?', (vehicle_id,)).fetchone()
+    if vehicle is None:
+        conn.close()
+        flash('Vehicle not found')
+        return redirect(url_for('admin_dashboard'))
+    if request.method == 'POST':
+        try:
+            values = vehicle_form_values()
+        except ValueError as error:
+            conn.close()
+            flash(str(error))
+            return render_template('vehicle_form.html', vehicle=request.form, fields=VEHICLE_FIELDS, title='Edit Vehicle')
+        assignments = ', '.join(f'{field} = ?' for field in values)
+        conn.execute(f'UPDATE vehicles SET {assignments} WHERE vehicle_id = ?', (*values.values(), vehicle_id))
+        conn.commit()
+        conn.close()
+        flash('Vehicle updated successfully')
+        return redirect(url_for('admin_dashboard'))
+    conn.close()
+    return render_template('vehicle_form.html', vehicle=vehicle, fields=VEHICLE_FIELDS, title='Edit Vehicle')
+
+
+@app.route('/admin/vehicles/<int:vehicle_id>/delete', methods=['POST'])
+@admin_required
+def delete_vehicle(vehicle_id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM vehicles WHERE vehicle_id = ?', (vehicle_id,))
+    conn.commit()
+    conn.close()
+    flash('Vehicle deleted successfully')
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
