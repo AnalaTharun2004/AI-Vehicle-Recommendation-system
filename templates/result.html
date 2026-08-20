@@ -40,7 +40,7 @@
                     <div class="results">
                         {% for vehicle in vehicles %}
                             <article class="result-card">
-                                {% if vehicle['image_path'] %}<img class="vehicle-image" src="{{ url_for('static', filename=vehicle['image_path']) }}" alt="{{ vehicle['name'] }}">{% endif %}
+                                {% if vehicle['image_path'] %}<img class="vehicle-image" src="{{ vehicle_image_url(vehicle['image_path']) }}" alt="{{ vehicle['name'] }}">{% endif %}
                                 <h3>{{ vehicle['name'] }}</h3>
                                 <p><strong>Brand:</strong> {{ vehicle['brand'] }}</p>
                                 <p><strong>Type:</strong> {{ vehicle['type'] }}</p>

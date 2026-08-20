@@ -20,6 +20,17 @@ ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
 os.makedirs(os.path.join(BASE_DIR, 'database'), exist_ok=True)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
+def vehicle_image_url(image_path):
+    if not image_path:
+        return None
+    if image_path.startswith(('http://', 'https://')):
+        return image_path
+    return url_for('static', filename=image_path)
+
+
+app.jinja_env.globals['vehicle_image_url'] = vehicle_image_url
+
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
