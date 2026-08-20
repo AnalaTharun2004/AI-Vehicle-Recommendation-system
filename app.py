@@ -33,6 +33,9 @@ def init_db():
     conn.close()
 
 
+init_db()
+
+
 def get_users():
     conn = get_db_connection()
     cursor = conn.cursor()
