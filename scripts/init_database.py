@@ -47,6 +47,9 @@ def init_database():
             insurance_cost INTEGER
         )
     ''')
+    columns = {row[1] for row in cursor.execute('PRAGMA table_info(vehicles)').fetchall()}
+    if 'image_path' not in columns:
+        cursor.execute('ALTER TABLE vehicles ADD COLUMN image_path TEXT')
     print("✓ Vehicles table created")
     
     # Create User Preferences Table

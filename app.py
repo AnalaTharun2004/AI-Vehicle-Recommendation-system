@@ -4,6 +4,7 @@ import sqlite3
 import os
 import secrets
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'development-secret-key-change-me')
@@ -13,8 +14,11 @@ ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATABASE = os.path.join(BASE_DIR, 'database', 'vehicle.db')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
+ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
 
 os.makedirs(os.path.join(BASE_DIR, 'database'), exist_ok=True)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
@@ -34,6 +38,9 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    columns = {row[1] for row in cursor.execute('PRAGMA table_info(vehicles)').fetchall()}
+    if 'image_path' not in columns:
+        cursor.execute('ALTER TABLE vehicles ADD COLUMN image_path TEXT')
     conn.commit()
     conn.close()
 
@@ -141,6 +148,18 @@ def vehicle_form_values():
     return values
 
 
+def save_vehicle_image(file):
+    if not file or not file.filename:
+        return None
+    filename = secure_filename(file.filename)
+    extension = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    if extension not in ALLOWED_IMAGE_EXTENSIONS:
+        raise ValueError('Use a JPG, PNG, WEBP, or GIF image')
+    stored_name = f'{secrets.token_hex(12)}.{extension}'
+    file.save(os.path.join(UPLOAD_FOLDER, stored_name))
+    return f'uploads/{stored_name}'
+
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if session.get('is_admin'):
@@ -177,6 +196,7 @@ def create_vehicle():
     if request.method == 'POST':
         try:
             values = vehicle_form_values()
+            values['image_path'] = save_vehicle_image(request.files.get('image'))
         except ValueError as error:
             flash(str(error))
             return render_template('vehicle_form.html', vehicle=request.form, fields=VEHICLE_FIELDS, title='Add Vehicle')
@@ -203,6 +223,8 @@ def edit_vehicle(vehicle_id):
     if request.method == 'POST':
         try:
             values = vehicle_form_values()
+            uploaded_image = save_vehicle_image(request.files.get('image'))
+            values['image_path'] = uploaded_image or vehicle['image_path']
         except ValueError as error:
             conn.close()
             flash(str(error))
